@@ -26,6 +26,5 @@ async def add_api_key(
 @router.get("/", response_model=List[APIKey])
 async def list_api_keys(
     owner_id: str = Depends(get_effective_owner_id),
-    _auth: None = Depends(allow_resource_admin),
 ):
     return await storage.list_for_owner(owner_id)
