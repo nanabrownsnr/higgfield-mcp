@@ -3,7 +3,7 @@
 FROM node:20-alpine AS ui-build
 WORKDIR /workspace
 COPY app/ui/file_dir/package.json app/ui/file_dir/vite.config.js /workspace/app/ui/file_dir/
-RUN cd /workspace/app/ui/file_dir && npm ci && npm run build
+RUN cd /workspace/app/ui/file_dir && npm i && npm run build
 
 # Stage 2 – final image
 FROM python:3.12-slim
