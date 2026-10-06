@@ -2,11 +2,11 @@
 import asyncio
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
-from fastapi import Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException
 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
-from fastapi_mcp import FastApiMCP
+from fastapi_mcp import FastMCP
 from mcp.server import Server
 import httpx
 
@@ -17,7 +17,8 @@ from app.tools.files import register_tools as register_files_tools
 from app.tools.render_content import register_tools as register_render_tools
 from app.api.v1.manifest import router as manifest_router
 from app.api.v1.health import router as health_router
-from app.api.v1.external_connection import router as external_connection_router
+from app.api.v1.routers.keys import router as keys_router
+from app.api.v1.routers.generations import router as generations_router
 
 # ---------- Usage tracking ----------
 async def track_usage(request: Request) -> None:
@@ -65,7 +66,7 @@ register_files_tools(Server(app))
 register_render_tools(Server(app))
 
 # ---------- MCP server ----------
-mcpapp = FastApiMCP(app, headers=["Authorization", settings.PERSONA_ID_HEADER])
+mcpapp = FastMCP(app, headers=["Authorization", settings.PERSONA_ID_HEADER])
 mcpapp.mount_http(mount_path="/mcp")
 
 # ---------- REST-only routers ----------
