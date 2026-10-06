@@ -5,7 +5,7 @@ from app.core.authentication.auth_middleware import (
     get_current_token,
     get_effective_owner_id,
 )
-from app.core.authentication.role import allow_resource_admin
+# removed admin role guard – open to any authenticated user
 from app.core.storage import MongoStorage
 from app.models.api_key import APIKey
 
@@ -17,7 +17,6 @@ storage = MongoStorage(model=APIKey, collection="api_keys", encrypted_fields=["k
 async def add_api_key(
     data: APIKey,
     owner_id: str = Depends(get_effective_owner_id),
-    _auth: None = Depends(allow_resource_admin),
 ):
     key = APIKey(name=data.name, key=data.key, owner_id=owner_id)
     await storage.create(owner_id, key.dict(exclude={"owner_id"}))
