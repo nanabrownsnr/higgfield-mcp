@@ -7,5 +7,8 @@ export default defineConfig({
     outDir: "../../dist/ui_file_dir",
     assetsInlineLimit: 0,
     manifest: true,
+    rollupOptions: {
+      external: ["@modelcontextprotocol/ext-apps-react"],
+    },
   },
 });

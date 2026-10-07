@@ -1,7 +1,7 @@
 import { useApp, hydrate } from "@modelcontextprotocol/ext-apps-react";
 import { useEffect, useState } from "react";
 
-function App() {
+export function App() {
   const { fetchTool } = useApp();
   const [items, setItems] = useState([]);
 

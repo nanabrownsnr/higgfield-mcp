@@ -1,0 +1,81 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-*
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+
+# Node/UI
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+coverage/
+*.log
+
+# Build artifacts
+*.pyc
+*.pyo
+*.egg
+*.whl
+
+# Docker
+.DS_Store
+*.log
+
+# OS
+Thumbs.db
+.DS_Store
+Desktop.ini
+
+# Application specific
+logs/
+*.db
+*.sqlite
+*.sqlite3
+tmp/
+temp/
+
+# SSH keys
+*.pem
+*.key
+*.pub
+
+# Secrets
+credentials.json
+secrets.yaml
+.env
+
+# Generated files
+*.log
+*.cache
+.mypy_cache/
