@@ -1,6 +1,6 @@
-"""External connection endpoints.
+"""External connection endpoints for API v1 routers.
 
-Provides project-scoped connection management APIs.
+Provides authentication-scoped connection management APIs.
 """
 
 from typing import Any
@@ -13,12 +13,15 @@ from app.config import settings
 router = APIRouter()
 
 
-@router.get("/api/v1/external-connection/me")
+@router.get("/external-connection/me")
 async def get_current_connection() -> dict[str, Any]:
     """Get current user's external connection status.
 
+    Returns connection status for the authenticated user.
+
     Args:
-        Returns connection status.
+        Returns:
+            Connection status including API key information
 
     Raises:
         HTTPException: If request is not authenticated
@@ -31,12 +34,11 @@ async def get_current_connection() -> dict[str, Any]:
         "persona_id": identity.persona_id,
         "status": "connected",
         "has_credentials": True,
-        "api_key_count": 0,  # Would be populated by actual storage
     }
 
 
-# Keep backward compatibility with health route
+# Keep backward compatibility
 @router.get("/health")
 async def health() -> dict[str, str]:
-    """Simple health endpoint for backward compatibility."""
-    return {"status": "healthy", "service": settings.SERVICE_ID}
+    """Simple health check endpoint."""
+    return {"status": "healthy"}

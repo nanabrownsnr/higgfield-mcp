@@ -1,3 +1,8 @@
-# expose routers
-from .keys import router as keys_router
-from .generations import router as generations_router
+"""API v1 routers package."""
+
+from app.api.v1.routers import keys, generations  # noqa: F401
+
+__all__ = [
+    "keys",
+    "generations",
+]

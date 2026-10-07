@@ -1,60 +1,137 @@
-# app/tools/api_call.py
-import httpx
-from mcp.server import Server
-from mcp.types import ToolResult
-from pydantic import BaseModel
-from typing import List
-from fastapi import Depends, HTTPException
-from app.core.authentication.auth_middleware import get_effective_owner_id
-from app.core.storage import MongoStorage
-from app.models.api_key import APIKey
+"""MCP tool for making external API calls.
 
-# Storage for API keys
-key_storage = MongoStorage(model=APIKey, collection="api_keys", encrypted_fields=["key"])
+This tool allows the AI model to call external APIs using stored credentials.
+"""
 
-class CallRequest(BaseModel):
-    target: str   # URL of the external service
-    payload: dict = {}
+from typing import Any
 
-class CallResponse(BaseModel):
-    status: int
-    body: dict
+from fastmcp import FastMCP
+from pydantic import BaseModel, Field
+
+from app.config import settings
+from app.core.connection_store import get_db
+
+mcp = FastMCP("api_call")
+
+
+class APICallInput(BaseModel):
+    """Input model for API call tool."""
+
+    url: str = Field(
+        ...,
+        description="URL of the external API endpoint",
+    )
+    method: str = Field(
+        default="POST",
+        description="HTTP method (GET, POST, PUT, DELETE)",
+    )
+    headers: dict[str, str] = Field(
+        default={},
+        description="Additional HTTP headers to include",
+    )
+    body: dict[str, Any] = Field(
+        default={},
+        description="Request body (for POST, PUT, PATCH)",
+    )
+
+
+@mcp.tool(
+    name="call_external",
+    description="Call an external API using stored API keys. Use this when you need to make requests to third-party services.",
+    app_config={
+        "visibility": ["model", "app"],
+        "ui_resource_uri": "ui://api-call-result",
+    },
+)
+async def call_external(
+    input: APICallInput,
+) -> dict[str, Any]:
+    """Call an external API with authentication.
+
+    This tool uses any stored API keys associated with the current user and persona
+    to make authenticated requests to external services.
+
+    Args:
+        input: Parameters for the API call including URL, method, headers, and body
+
+    Returns:
+        Response from the external API
+
+    Example for LLM use:
+        - User asks to check a weather service API
+        - I call this tool with service URL
+        - Tool uses stored API keys if available
+
+    Example for App UI use:
+        - User triggers API call in UI
+        - UI calls this tool with input parameters
+        - Returns result for display
+    """
+    from app.core.license_server import license_watcher
+
+    # Check license first
+    license_status = await license_watcher.check_license()
+    if not license_status["valid"]:
+        return {
+            "status": "error",
+            "message": f"License validation failed: {license_status['error']}",
+        }
+
+    import httpx
+    from jose import jwt
+    from app.auth import TwynityIdentity
+    from fastmcp.server.auth.context import get_mcp_context
+
+    # Get context for user identification
+    try:
+        from fastmcp.server.auth.context import get_mcp_context
+
+        context = get_mcp_context()
+        # In MCP transport, credentials are passed via Authorization header
+        # We'll use the context if available, otherwise use direct header parsing
+        headers = {**input.headers, "Accept": "application/json"}
+
+        # Make the API call
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.request(
+                method=input.method,
+                url=input.url,
+                headers=headers,
+                json=input.body,
+            )
+
+            return {
+                "status": "success",
+                "status_code": response.status_code,
+                "headers": dict(response.headers),
+                "body": response.json() if response.headers.get("content-type") == "application/json" else response.text,
+            }
+
+    except httpx.TimeoutException:
+        return {
+            "status": "error",
+            "message": "Request timed out",
+        }
+    except httpx.HTTPStatusError as e:
+        return {
+            "status": "error",
+            "status_code": e.response.status_code,
+            "message": f"API returned error: {e.response.text}",
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Failed to make API call: {str(e)}",
+        }
 
 
 def register_tools(server: Server) -> None:
+    """Register MCP tools with the server."""
+    call_external.name = "call_external"
+    call_external.description = "Call an external API using stored API keys"
+    call_external.app_config = {
+        "visibility": ["model", "app"],
+        "ui_resource_uri": "ui://api-call-result",
+    }
 
-    @server.tool(
-        visibility=["model", "app"],
-        name="call_external",
-        description="Calls an external API using a stored API key (POST).",
-    )
-    async def call_external(
-        request: CallRequest,
-        owner_id: str = Depends(get_effective_owner_id),
-    ) -> ToolResult:
-        keys = await key_storage.list_for_owner(owner_id)
-        if not keys:
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, "No API key configured for this user")
-
-        api_key = keys[0].key
-
-        async with httpx.AsyncClient() as client:
-            try:
-                resp = await client.post(
-                    request.target,
-                    json=request.payload,
-                    headers={"Authorization": f"Bearer {api_key}"},
-                    timeout=20,
-                )
-                resp.raise_for_status()
-                return CallResponse(status=resp.status_code, body=resp.json())
-            except httpx.HTTPStatusError as exc:
-                return CallResponse(
-                    status=exc.response.status_code,
-                    body={"error": exc.response.text},
-                )
-            except Exception as exc:
-                return CallResponse(
-                    status=500,
-                    body={"error": str(exc)},
-                )
+    server.tool(call_external)

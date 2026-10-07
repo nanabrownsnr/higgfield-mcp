@@ -10,7 +10,7 @@ T = TypeVar("T", bound=BaseModel)
 class MongoStorage(Generic[T]):
     def __init__(self, model: type[T], collection: str, encrypted_fields: list[str]):
         client = AsyncIOMotorClient(settings.MONGODB_URI)
-        self.db = client[settings.DATABASE_NAME]
+        self.db = client[settings.MONGODB_DB]
         self.collection = self.db[collection]
         self.model = model
         self.encrypted_fields = encrypted_fields
