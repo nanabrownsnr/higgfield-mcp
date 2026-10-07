@@ -7,9 +7,8 @@ RUN npm install --ignore-engines && \
 FROM python:3.12-slim
 WORKDIR /app
 
-# Vite uses outDir "../../dist/ui_file_dir" which from WORKDIR writes to
-# workspace stage 1 root /workspace/dist/ui_file_dir - copy that in
-COPY dist/ui_file_dir/ ./dist/
+# Copy dist from stage 1 - it outputs to ./dist relative to WORKDIR
+COPY app/ui/file_dir/dist/ ./dist/
 COPY . .
 
 RUN pip install uv && uv sync --no-dev

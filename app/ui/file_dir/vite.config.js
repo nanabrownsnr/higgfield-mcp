@@ -4,7 +4,7 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
   build: {
-    outDir: "../../dist/ui_file_dir",
+    outDir: "./dist",
     assetsInlineLimit: 0,
     manifest: true,
     rollupOptions: {
